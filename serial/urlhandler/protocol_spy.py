@@ -173,7 +173,7 @@ class FormatLog(object):
 
     def control(self, name, value):
         """show control calls"""
-        self.log.info('{}: {}'.format(name, value))
+        self.log.info(f'{name}: {value}')
 
 
 class FormatLogHex(FormatLog):
@@ -242,8 +242,8 @@ class Serial(serial.Serial):
                     raise ValueError('unknown option: {!r}'.format(option))
         except ValueError as e:
             raise serial.SerialException(
-                'expected a string in the form '
-                '"spy://port[?option[=value][&option[=value]]]": {}'.format(e))
+                f'expected a string in the form "spy://port[?option[=value][&option[=value]]]": {e}'
+            )
         self.formatter = formatter(output, color)
         return ''.join([parts.netloc, parts.path])
 
@@ -272,7 +272,7 @@ class Serial(serial.Serial):
     def in_waiting(self):
         n = super(Serial, self).in_waiting
         if self.show_all:
-            self.formatter.control('Q-RX', 'in_waiting -> {}'.format(n))
+            self.formatter.control('Q-RX', f'in_waiting -> {n}')
         return n
 
     def flush(self):
@@ -288,7 +288,7 @@ class Serial(serial.Serial):
         super(Serial, self).reset_output_buffer()
 
     def send_break(self, duration=0.25):
-        self.formatter.control('BRK', 'send_break {}s'.format(duration))
+        self.formatter.control('BRK', f'send_break {duration}s')
         super(Serial, self).send_break(duration)
 
     @serial.Serial.break_condition.setter

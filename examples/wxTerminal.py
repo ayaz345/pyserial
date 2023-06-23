@@ -243,7 +243,7 @@ class TerminalFrame(wx.Frame):
         """Clear contents of output window."""
         self.text_ctrl_output.Clear()
 
-    def OnPortSettings(self, event):  # wxGlade: TerminalFrame.<event_handler>
+    def OnPortSettings(self, event):    # wxGlade: TerminalFrame.<event_handler>
         """
         Show the port settings dialog. The reader thread is stopped for the
         settings change.
@@ -270,15 +270,9 @@ class TerminalFrame(wx.Frame):
                         dlg.ShowModal()
                 else:
                     self.StartThread()
-                    self.SetTitle("Serial Terminal on {} [{},{},{},{}{}{}]".format(
-                        self.serial.portstr,
-                        self.serial.baudrate,
-                        self.serial.bytesize,
-                        self.serial.parity,
-                        self.serial.stopbits,
-                        ' RTS/CTS' if self.serial.rtscts else '',
-                        ' Xon/Xoff' if self.serial.xonxoff else '',
-                        ))
+                    self.SetTitle(
+                        f"Serial Terminal on {self.serial.portstr} [{self.serial.baudrate},{self.serial.bytesize},{self.serial.parity},{self.serial.stopbits}{' RTS/CTS' if self.serial.rtscts else ''}{' Xon/Xoff' if self.serial.xonxoff else ''}]"
+                    )
                     ok = True
             else:
                 # on startup, dialog aborted
@@ -333,8 +327,7 @@ class TerminalFrame(wx.Frame):
         transformation (newlines) and generates an SerialRxEvent
         """
         while self.alive.isSet():
-            b = self.serial.read(self.serial.in_waiting or 1)
-            if b:
+            if b := self.serial.read(self.serial.in_waiting or 1):
                 # newline transformation
                 if self.settings.newline == NEWLINE_CR:
                     b = b.replace(b'\r', b'\n')

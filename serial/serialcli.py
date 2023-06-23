@@ -41,7 +41,7 @@ class Serial(SerialBase):
             self._port_handle = System.IO.Ports.SerialPort(self.portstr)
         except Exception as msg:
             self._port_handle = None
-            raise SerialException("could not open port %s: %s" % (self.portstr, msg))
+            raise SerialException(f"could not open port {self.portstr}: {msg}")
 
         # if RTS and/or DTR are not set before open, they default to True
         if self._rts_state is None:

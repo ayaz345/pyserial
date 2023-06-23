@@ -63,7 +63,7 @@ class Serial(SerialBase):
             self._socket = socket.create_connection(self.from_url(self.portstr), timeout=POLL_TIMEOUT)
         except Exception as msg:
             self._socket = None
-            raise SerialException("Could not open port {}: {}".format(self.portstr, msg))
+            raise SerialException(f"Could not open port {self.portstr}: {msg}")
         # after connecting, switch to non-blocking, we're using select
         self._socket.setblocking(False)
 
@@ -114,13 +114,12 @@ class Serial(SerialBase):
         try:
             # process options now, directly altering self
             for option, values in urlparse.parse_qs(parts.query, True).items():
-                if option == 'logging':
-                    logging.basicConfig()   # XXX is that good to call it here?
-                    self.logger = logging.getLogger('pySerial.socket')
-                    self.logger.setLevel(LOGGER_LEVELS[values[0]])
-                    self.logger.debug('enabled logging')
-                else:
+                if option != 'logging':
                     raise ValueError('unknown option: {!r}'.format(option))
+                logging.basicConfig()   # XXX is that good to call it here?
+                self.logger = logging.getLogger('pySerial.socket')
+                self.logger.setLevel(LOGGER_LEVELS[values[0]])
+                self.logger.debug('enabled logging')
             if not 0 <= parts.port < 65536:
                 raise ValueError("port not in range 0...65535")
         except ValueError as e:
@@ -164,24 +163,22 @@ class Serial(SerialBase):
                 # there is nothing to read.
                 if not ready:
                     break   # timeout
-                buf = self._socket.recv(size - len(read))
-                # read should always return some data as select reported it was
-                # ready to read when we get to this point, unless it is EOF
-                if not buf:
+                if buf := self._socket.recv(size - len(read)):
+                    read.extend(buf)
+                else:
                     raise SerialException('socket disconnected')
-                read.extend(buf)
             except OSError as e:
                 # this is for Python 3.x where select.error is a subclass of
                 # OSError ignore BlockingIOErrors and EINTR. other errors are shown
                 # https://www.python.org/dev/peps/pep-0475.
                 if e.errno not in (errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS, errno.EINTR):
-                    raise SerialException('read failed: {}'.format(e))
+                    raise SerialException(f'read failed: {e}')
             except (select.error, socket.error) as e:
                 # this is for Python 2.x
                 # ignore BlockingIOErrors and EINTR. all errors are shown
                 # see also http://www.python.org/dev/peps/pep-3151/#select
                 if e[0] not in (errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS, errno.EINTR):
-                    raise SerialException('read failed: {}'.format(e))
+                    raise SerialException(f'read failed: {e}')
             if timeout.expired():
                 break
         return bytes(read)
@@ -228,13 +225,13 @@ class Serial(SerialBase):
                 # OSError ignore BlockingIOErrors and EINTR. other errors are shown
                 # https://www.python.org/dev/peps/pep-0475.
                 if e.errno not in (errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS, errno.EINTR):
-                    raise SerialException('write failed: {}'.format(e))
+                    raise SerialException(f'write failed: {e}')
             except select.error as e:
                 # this is for Python 2.x
                 # ignore BlockingIOErrors and EINTR. all errors are shown
                 # see also http://www.python.org/dev/peps/pep-3151/#select
                 if e[0] not in (errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS, errno.EINTR):
-                    raise SerialException('write failed: {}'.format(e))
+                    raise SerialException(f'write failed: {e}')
             if not timeout.is_non_blocking and timeout.expired():
                 raise SerialTimeoutException('Write timeout')
         return length - len(d)
@@ -256,13 +253,13 @@ class Serial(SerialBase):
                 # OSError ignore BlockingIOErrors and EINTR. other errors are shown
                 # https://www.python.org/dev/peps/pep-0475.
                 if e.errno not in (errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS, errno.EINTR):
-                    raise SerialException('read failed: {}'.format(e))
+                    raise SerialException(f'read failed: {e}')
             except (select.error, socket.error) as e:
                 # this is for Python 2.x
                 # ignore BlockingIOErrors and EINTR. all errors are shown
                 # see also http://www.python.org/dev/peps/pep-3151/#select
                 if e[0] not in (errno.EAGAIN, errno.EALREADY, errno.EWOULDBLOCK, errno.EINPROGRESS, errno.EINTR):
-                    raise SerialException('read failed: {}'.format(e))
+                    raise SerialException(f'read failed: {e}')
 
     def reset_output_buffer(self):
         """\
@@ -349,11 +346,11 @@ class Serial(SerialBase):
 if __name__ == '__main__':
     import sys
     s = Serial('socket://localhost:7000')
-    sys.stdout.write('{}\n'.format(s))
+    sys.stdout.write(f'{s}\n')
 
     sys.stdout.write("write...\n")
     s.write(b"hello\n")
     s.flush()
-    sys.stdout.write("read: {}\n".format(s.read(5)))
+    sys.stdout.write(f"read: {s.read(5)}\n")
 
     s.close()

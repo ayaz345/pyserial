@@ -49,7 +49,7 @@ class TestHighLoad(unittest.TestCase):
 
     def test0_WriteReadLoopback(self):
         """Send big strings, write/read order."""
-        for i in range(self.N):
+        for _ in range(self.N):
             q = bytes_0to255
             self.s.write(q)
             self.assertEqual(self.s.read(len(q)), q)  # expected same which was written before
@@ -58,10 +58,14 @@ class TestHighLoad(unittest.TestCase):
     def test1_WriteWriteReadLoopback(self):
         """Send big strings, multiple write one read."""
         q = bytes_0to255
-        for i in range(self.N):
+        for _ in range(self.N):
             self.s.write(q)
         read = self.s.read(len(q) * self.N)
-        self.assertEqual(read, q * self.N, "expected what was written before. got {} bytes, expected {}".format(len(read), self.N * len(q)))
+        self.assertEqual(
+            read,
+            q * self.N,
+            f"expected what was written before. got {len(read)} bytes, expected {self.N * len(q)}",
+        )
         self.assertEqual(self.s.inWaiting(), 0)  # "expected empty buffer after all sent chars are read")
 
 

@@ -85,7 +85,7 @@ class Serial(SerialBase):
             portpath = self.from_url(self.portstr)
             self._hid_handle.open_path(portpath)
         except OSError as msg:
-            raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+            raise SerialException(msg.errno, f"could not open port {self._port}: {msg}")
 
         try:
             self._reconfigure_port()
@@ -100,7 +100,7 @@ class Serial(SerialBase):
             self.is_open = True
             self._thread = threading.Thread(target=self._hid_read_loop)
             self._thread.setDaemon(True)
-            self._thread.setName('pySerial CP2110 reader thread for {}'.format(self._port))
+            self._thread.setName(f'pySerial CP2110 reader thread for {self._port}')
             self._thread.start()
 
     def from_url(self, url):
@@ -137,11 +137,7 @@ class Serial(SerialBase):
         else:
             raise ValueError('Invalid parity: {!r}'.format(self._parity))
 
-        if self.rtscts:
-            flow_control_value = 0x01
-        else:
-            flow_control_value = 0x00
-
+        flow_control_value = 0x01 if self.rtscts else 0x00
         data_bits_value = None
         if self._bytesize == 5:
             data_bits_value = 0x00
@@ -157,9 +153,7 @@ class Serial(SerialBase):
         stop_bits_value = None
         if self._stopbits == serial.STOPBITS_ONE:
             stop_bits_value = 0x00
-        elif self._stopbits == serial.STOPBITS_ONE_POINT_FIVE:
-            stop_bits_value = 0x01
-        elif self._stopbits == serial.STOPBITS_TWO:
+        elif self._stopbits in [serial.STOPBITS_ONE_POINT_FIVE, serial.STOPBITS_TWO]:
             stop_bits_value = 0x01
         else:
             raise ValueError('Invalid stop bit specification: {!r}'.format(self._stopbits))

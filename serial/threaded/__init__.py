@@ -231,13 +231,12 @@ class ReaderThread(threading.Thread):
         Wait until connection is set up and return the transport and protocol
         instances.
         """
-        if self.alive:
-            self._connection_made.wait()
-            if not self.alive:
-                raise RuntimeError('connection_lost already called')
-            return (self, self.protocol)
-        else:
+        if not self.alive:
             raise RuntimeError('already stopped')
+        self._connection_made.wait()
+        if not self.alive:
+            raise RuntimeError('connection_lost already called')
+        return (self, self.protocol)
 
     # - -  context manager, returns protocol
 

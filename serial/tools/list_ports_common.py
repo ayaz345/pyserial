@@ -50,12 +50,12 @@ class ListPortInfo(object):
         self.interface = None
         # special handling for links
         if not skip_link_detection and device is not None and os.path.islink(device):
-            self.hwid = 'LINK={}'.format(os.path.realpath(device))
+            self.hwid = f'LINK={os.path.realpath(device)}'
 
     def usb_description(self):
         """return a short string to name the port based on USB info"""
         if self.interface is not None:
-            return '{} - {}'.format(self.product, self.interface)
+            return f'{self.product} - {self.interface}'
         elif self.product is not None:
             return self.product
         else:
@@ -66,8 +66,9 @@ class ListPortInfo(object):
         return 'USB VID:PID={:04X}:{:04X}{}{}'.format(
             self.vid or 0,
             self.pid or 0,
-            ' SER={}'.format(self.serial_number) if self.serial_number is not None else '',
-            ' LOCATION={}'.format(self.location) if self.location is not None else '')
+            f' SER={self.serial_number}' if self.serial_number is not None else '',
+            f' LOCATION={self.location}' if self.location is not None else '',
+        )
 
     def apply_usb_info(self):
         """update description and hwid from USB data"""
@@ -82,13 +83,13 @@ class ListPortInfo(object):
 
     def __lt__(self, other):
         if not isinstance(other, ListPortInfo):
-            raise TypeError('unorderable types: {}() and {}()'.format(
-                type(self).__name__,
-                type(other).__name__))
+            raise TypeError(
+                f'unorderable types: {type(self).__name__}() and {type(other).__name__}()'
+            )
         return numsplit(self.device) < numsplit(other.device)
 
     def __str__(self):
-        return '{} - {}'.format(self.device, self.description)
+        return f'{self.device} - {self.description}'
 
     def __getitem__(self, index):
         """Item access: backwards compatible -> (port, desc, hwid)"""
@@ -99,7 +100,7 @@ class ListPortInfo(object):
         elif index == 2:
             return self.hwid
         else:
-            raise IndexError('{} > 2'.format(index))
+            raise IndexError(f'{index} > 2')
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -108,11 +109,11 @@ def list_links(devices):
     search all /dev devices and look for symlinks to known ports already
     listed in devices.
     """
-    links = []
-    for device in glob.glob('/dev/*'):
-        if os.path.islink(device) and os.path.realpath(device) in devices:
-            links.append(device)
-    return links
+    return [
+        device
+        for device in glob.glob('/dev/*')
+        if os.path.islink(device) and os.path.realpath(device) in devices
+    ]
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

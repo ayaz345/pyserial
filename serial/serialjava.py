@@ -75,7 +75,7 @@ class Serial(SerialBase):
             self.sPort = portId.open("python serial module", 10)
         except Exception as msg:
             self.sPort = None
-            raise SerialException("Could not open port: %s" % msg)
+            raise SerialException(f"Could not open port: {msg}")
         self._reconfigurePort()
         self._instream = self.sPort.getInputStream()
         self._outstream = self.sPort.getOutputStream()
@@ -179,7 +179,7 @@ class Serial(SerialBase):
         if not self.sPort:
             raise PortNotOpenError()
         if not isinstance(data, (bytes, bytearray)):
-            raise TypeError('expected %s or bytearray, got %s' % (bytes, type(data)))
+            raise TypeError(f'expected {bytes} or bytearray, got {type(data)}')
         self._outstream.write(data)
         return len(data)
 

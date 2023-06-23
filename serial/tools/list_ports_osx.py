@@ -122,8 +122,12 @@ def get_string_property(device_type, property):
             output = output.decode('utf-8')
         else:
             buffer = ctypes.create_string_buffer(io_name_size);
-            success = cf.CFStringGetCString(CFContainer, ctypes.byref(buffer), io_name_size, kCFStringEncodingUTF8)
-            if success:
+            if success := cf.CFStringGetCString(
+                CFContainer,
+                ctypes.byref(buffer),
+                io_name_size,
+                kCFStringEncodingUTF8,
+            ):
                 output = buffer.value.decode('utf-8')
         cf.CFRelease(CFContainer)
     return output
@@ -144,13 +148,9 @@ def get_int_property(device_type, property, cf_number_type):
             property.encode("utf-8"),
             kCFStringEncodingUTF8)
 
-    CFContainer = iokit.IORegistryEntryCreateCFProperty(
-            device_type,
-            key,
-            kCFAllocatorDefault,
-            0)
-
-    if CFContainer:
+    if CFContainer := iokit.IORegistryEntryCreateCFProperty(
+        device_type, key, kCFAllocatorDefault, 0
+    ):
         if (cf_number_type == kCFNumberSInt32Type):
             number = ctypes.c_uint32()
         elif (cf_number_type == kCFNumberSInt16Type):
@@ -163,11 +163,7 @@ def get_int_property(device_type, property, cf_number_type):
 def IORegistryEntryGetName(device):
     devicename = ctypes.create_string_buffer(io_name_size);
     res = iokit.IORegistryEntryGetName(device, ctypes.byref(devicename))
-    if res != KERN_SUCCESS:
-        return None
-    # this works in python2 but may not be valid. Also I don't know if
-    # this encoding is guaranteed. It may be dependent on system locale.
-    return devicename.value.decode('utf-8')
+    return None if res != KERN_SUCCESS else devicename.value.decode('utf-8')
 
 def IOObjectGetClass(device):
     classname = ctypes.create_string_buffer(io_name_size)
@@ -207,10 +203,10 @@ def GetIOServicesByType(service_type):
 
     services = []
     while iokit.IOIteratorIsValid(serial_port_iterator):
-        service = iokit.IOIteratorNext(serial_port_iterator)
-        if not service:
+        if service := iokit.IOIteratorNext(serial_port_iterator):
+            services.append(service)
+        else:
             break
-        services.append(service)
     iokit.IOObjectRelease(serial_port_iterator)
     return services
 
@@ -219,11 +215,11 @@ def location_to_string(locationID):
     """
     helper to calculate port and bus number from locationID
     """
-    loc = ['{}-'.format(locationID >> 24)]
+    loc = [f'{locationID >> 24}-']
     while locationID & 0xf00000:
         if len(loc) > 1:
             loc.append('.')
-        loc.append('{}'.format((locationID >> 20) & 0xf))
+        loc.append(f'{locationID >> 20 & 15}')
         locationID <<= 4
     return ''.join(loc)
 
@@ -239,10 +235,8 @@ def scan_interfaces():
     """
     interfaces = []
     for service in GetIOServicesByType('IOSerialBSDClient'):
-        device = get_string_property(service, "IOCalloutDevice")
-        if device:
-            usb_device = GetParentDeviceByType(service, "IOUSBInterface")
-            if usb_device:
+        if device := get_string_property(service, "IOCalloutDevice"):
+            if usb_device := GetParentDeviceByType(service, "IOUSBInterface"):
                 name = get_string_property(usb_device, "USB Interface Name") or None
                 locationID = get_int_property(usb_device, "locationID", kCFNumberSInt32Type) or ''
                 i = SuitableSerialInterface()
@@ -253,10 +247,14 @@ def scan_interfaces():
 
 
 def search_for_locationID_in_interfaces(serial_interfaces, locationID):
-    for interface in serial_interfaces:
-        if (interface.id == locationID):
-            return interface.name
-    return None
+    return next(
+        (
+            interface.name
+            for interface in serial_interfaces
+            if (interface.id == locationID)
+        ),
+        None,
+    )
 
 
 def comports(include_links=False):
@@ -266,9 +264,7 @@ def comports(include_links=False):
     ports = []
     serial_interfaces = scan_interfaces()
     for service in services:
-        # First, add the callout device file.
-        device = get_string_property(service, "IOCalloutDevice")
-        if device:
+        if device := get_string_property(service, "IOCalloutDevice"):
             info = list_ports_common.ListPortInfo(device)
             # If the serial port is implemented by IOUSBDevice
             # NOTE IOUSBDevice was deprecated as of 10.11 and finally on Apple Silicon
@@ -296,4 +292,4 @@ def comports(include_links=False):
 # test
 if __name__ == '__main__':
     for port, desc, hwid in sorted(comports()):
-        print("{}: {} [{}]".format(port, desc, hwid))
+        print(f"{port}: {desc} [{hwid}]")

@@ -27,8 +27,8 @@ class SysFS(list_ports_common.ListPortInfo):
         else:
             is_link = False
         self.usb_device_path = None
-        if os.path.exists('/sys/class/tty/{}/device'.format(self.name)):
-            self.device_path = os.path.realpath('/sys/class/tty/{}/device'.format(self.name))
+        if os.path.exists(f'/sys/class/tty/{self.name}/device'):
+            self.device_path = os.path.realpath(f'/sys/class/tty/{self.name}/device')
             self.subsystem = os.path.basename(os.path.realpath(os.path.join(self.device_path, 'subsystem')))
         else:
             self.device_path = None
@@ -72,7 +72,7 @@ class SysFS(list_ports_common.ListPortInfo):
             self.hwid = os.path.basename(self.device_path)
 
         if is_link:
-            self.hwid += ' LINK={}'.format(device)
+            self.hwid += f' LINK={device}'
 
     def read_line(self, *args):
         """\

@@ -19,9 +19,7 @@ from ctypes.wintypes import LPCWSTR
 from ctypes.wintypes import DWORD
 from ctypes.wintypes import WORD
 from ctypes.wintypes import BYTE
-_stdcall_libraries = {}
-_stdcall_libraries['kernel32'] = WinDLL('kernel32')
-
+_stdcall_libraries = {'kernel32': WinDLL('kernel32')}
 INVALID_HANDLE_VALUE = HANDLE(-1).value
 
 

@@ -72,7 +72,7 @@ class SP_DEVINFO_DATA(ctypes.Structure):
     ]
 
     def __str__(self):
-        return "ClassGuid:{} DevInst:{}".format(self.ClassGuid, self.DevInst)
+        return f"ClassGuid:{self.ClassGuid} DevInst:{self.DevInst}"
 
 
 PSP_DEVINFO_DATA = ctypes.POINTER(SP_DEVINFO_DATA)
@@ -165,9 +165,7 @@ def get_parent_serial_number(child_devinst, child_vid, child_pid, depth=0, last_
 
     # Get the parent device instance.
     devinst = DWORD()
-    ret = CM_Get_Parent(ctypes.byref(devinst), child_devinst, 0)
-
-    if ret:
+    if ret := CM_Get_Parent(ctypes.byref(devinst), child_devinst, 0):
         win_error = CM_MapCrToWin32Err(DWORD(ret), DWORD(0))
 
         # If there is no parent available, the child was the root device. We cannot traverse
@@ -180,13 +178,9 @@ def get_parent_serial_number(child_devinst, child_vid, child_pid, depth=0, last_
     # Get the ID of the parent device and parse it for vendor ID, product ID, and serial number.
     parentHardwareID = ctypes.create_unicode_buffer(250)
 
-    ret = CM_Get_Device_IDW(
-        devinst,
-        parentHardwareID,
-        ctypes.sizeof(parentHardwareID) - 1,
-        0)
-
-    if ret:
+    if ret := CM_Get_Device_IDW(
+        devinst, parentHardwareID, ctypes.sizeof(parentHardwareID) - 1, 0
+    ):
         raise ctypes.WinError(CM_MapCrToWin32Err(DWORD(ret), DWORD(0)))
 
     parentHardwareID_str = parentHardwareID.value
@@ -198,16 +192,9 @@ def get_parent_serial_number(child_devinst, child_vid, child_pid, depth=0, last_
     if not m:
         return '' if not last_serial_number else last_serial_number
 
-    vid = None
-    pid = None
-    serial_number = None
-    if m.group(1):
-        vid = int(m.group(1), 16)
-    if m.group(3):
-        pid = int(m.group(3), 16)
-    if m.group(7):
-        serial_number = m.group(7)
-
+    vid = int(m[1], 16) if m[1] else None
+    pid = int(m[3], 16) if m[3] else None
+    serial_number = m[7] if m[7] else None
     # store what we found as a fallback for malformed serial values up the chain
     found_serial_number = serial_number
 

@@ -13,6 +13,7 @@ Multi-port serial<->TCP/IP forwarder.
   does not influence serial port
 - only one client per connection
 """
+
 import os
 import select
 import socket
@@ -31,11 +32,14 @@ import dbus
 try:
     import avahi
 except ImportError:
+
+
+
     class avahi:
         DBUS_NAME = "org.freedesktop.Avahi"
         DBUS_PATH_SERVER = "/"
         DBUS_INTERFACE_SERVER = "org.freedesktop.Avahi.Server"
-        DBUS_INTERFACE_ENTRY_GROUP = DBUS_NAME + ".EntryGroup"
+        DBUS_INTERFACE_ENTRY_GROUP = f"{DBUS_NAME}.EntryGroup"
         IF_UNSPEC = -1
         PROTO_UNSPEC, PROTO_INET, PROTO_INET6 = -1, 0, 1
 
@@ -154,7 +158,9 @@ class Forwarder(ZeroconfService):
             self.handle_server_error()
             #~ raise
         if self.log is not None:
-            self.log.info("{}: Waiting for connection on {}...".format(self.device, self.network_port))
+            self.log.info(
+                f"{self.device}: Waiting for connection on {self.network_port}..."
+            )
 
         # zeroconfig
         self.publish()
@@ -165,7 +171,7 @@ class Forwarder(ZeroconfService):
     def close(self):
         """Close all resources and unpublish service"""
         if self.log is not None:
-            self.log.info("{}: closing...".format(self.device))
+            self.log.info(f"{self.device}: closing...")
         self.alive = False
         self.unpublish()
         if self.server_socket:
@@ -214,8 +220,7 @@ class Forwarder(ZeroconfService):
     def handle_serial_read(self):
         """Reading from serial port"""
         try:
-            data = os.read(self.serial.fileno(), 1024)
-            if data:
+            if data := os.read(self.serial.fileno(), 1024):
                 # store data in buffer if there is a client connected
                 if self.socket is not None:
                     # escape outgoing data when needed (Telnet IAC (0xff) character)
@@ -245,9 +250,7 @@ class Forwarder(ZeroconfService):
     def handle_socket_read(self):
         """Read from socket"""
         try:
-            # read a chunk from the serial port
-            data = self.socket.recv(1024)
-            if data:
+            if data := self.socket.recv(1024):
                 # Process RFC 2217 stuff when enabled
                 if self.rfc2217:
                     data = b''.join(self.rfc2217.filter(data))
@@ -258,7 +261,7 @@ class Forwarder(ZeroconfService):
                 self.handle_disconnect()
         except socket.error:
             if self.log is not None:
-                self.log.exception("{}: error reading...".format(self.device))
+                self.log.exception(f"{self.device}: error reading...")
             self.handle_socket_error()
 
     def handle_socket_write(self):
@@ -270,7 +273,7 @@ class Forwarder(ZeroconfService):
             self.buffer_ser2net = self.buffer_ser2net[count:]
         except socket.error:
             if self.log is not None:
-                self.log.exception("{}: error writing...".format(self.device))
+                self.log.exception(f"{self.device}: error writing...")
             self.handle_socket_error()
 
     def handle_socket_error(self):
@@ -295,7 +298,7 @@ class Forwarder(ZeroconfService):
             self.socket.setblocking(0)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             if self.log is not None:
-                self.log.warning('{}: Connected by {}:{}'.format(self.device, addr[0], addr[1]))
+                self.log.warning(f'{self.device}: Connected by {addr[0]}:{addr[1]}')
             self.serial.rts = True
             self.serial.dtr = True
             if self.log is not None:
@@ -306,7 +309,7 @@ class Forwarder(ZeroconfService):
             # reject connection if there is already one
             connection.close()
             if self.log is not None:
-                self.log.warning('{}: Rejecting connect from {}:{}'.format(self.device, addr[0], addr[1]))
+                self.log.warning(f'{self.device}: Rejecting connect from {addr[0]}:{addr[1]}')
 
     def handle_server_error(self):
         """Socket server fails"""
@@ -330,7 +333,7 @@ class Forwarder(ZeroconfService):
                 self.socket.close()
                 self.socket = None
                 if self.log is not None:
-                    self.log.warning('{}: Disconnected'.format(self.device))
+                    self.log.warning(f'{self.device}: Disconnected')
 
 
 def test():
@@ -516,7 +519,7 @@ terminated, it waits for the next connect.
         except KeyError:
             pass
         else:
-            log.info("unpublish: {}".format(forwarder))
+            log.info(f"unpublish: {forwarder}")
 
     alive = True
     next_check = 0

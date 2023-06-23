@@ -129,10 +129,7 @@ class Timeout(object):
         self.is_infinite = (duration is None)
         self.is_non_blocking = (duration == 0)
         self.duration = duration
-        if duration is not None:
-            self.target_time = self.TIME() + duration
-        else:
-            self.target_time = None
+        self.target_time = self.TIME() + duration if duration is not None else None
 
     def expired(self):
         """Return a boolean, telling if the timeout has expired"""
@@ -146,12 +143,11 @@ class Timeout(object):
             return None
         else:
             delta = self.target_time - self.TIME()
-            if delta > self.duration:
-                # clock jumped, recalculate
-                self.target_time = self.TIME() + self.duration
-                return self.duration
-            else:
+            if delta <= self.duration:
                 return max(0, delta)
+            # clock jumped, recalculate
+            self.target_time = self.TIME() + self.duration
+            return self.duration
 
     def restart(self, duration):
         """\
@@ -265,7 +261,7 @@ class SerialBase(io.RawIOBase):
         Change the port.
         """
         if port is not None and not isinstance(port, basestring):
-            raise ValueError('"port" must be None or a string, not {}'.format(type(port)))
+            raise ValueError(f'"port" must be None or a string, not {type(port)}')
         was_open = self.is_open
         if was_open:
             self.close()
@@ -443,12 +439,7 @@ class SerialBase(io.RawIOBase):
     @dsrdtr.setter
     def dsrdtr(self, dsrdtr=None):
         """Change DsrDtr flow control setting."""
-        if dsrdtr is None:
-            # if not set, keep backwards compatibility and follow rtscts setting
-            self._dsrdtr = self._rtscts
-        else:
-            # if defined independently, follow its value
-            self._dsrdtr = dsrdtr
+        self._dsrdtr = self._rtscts if dsrdtr is None else dsrdtr
         if self.is_open:
             self._reconfigure_port()
 
@@ -510,7 +501,7 @@ class SerialBase(io.RawIOBase):
         Get current port settings as a dictionary. For use with
         apply_settings().
         """
-        return dict([(key, getattr(self, '_' + key)) for key in self._SAVED_SETTINGS])
+        return dict([(key, getattr(self, f'_{key}')) for key in self._SAVED_SETTINGS])
 
     def apply_settings(self, d):
         """\
@@ -519,7 +510,7 @@ class SerialBase(io.RawIOBase):
         values will simply left unchanged.
         """
         for key in self._SAVED_SETTINGS:
-            if key in d and d[key] != getattr(self, '_' + key):   # check against internal "_" value
+            if key in d and d[key] != getattr(self, f'_{key}'):   # check against internal "_" value
                 setattr(self, key, d[key])          # set non "_" value to use properties write function
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -660,8 +651,7 @@ class SerialBase(io.RawIOBase):
         line = bytearray()
         timeout = Timeout(self._timeout)
         while True:
-            c = self.read(1)
-            if c:
+            if c := self.read(1):
                 line += c
                 if line[-lenterm:] == expected:
                     break
@@ -679,19 +669,19 @@ class SerialBase(io.RawIOBase):
         timeout (empty read).
         """
         while True:
-            line = self.read_until(*args, **kwargs)
-            if not line:
+            if line := self.read_until(*args, **kwargs):
+                yield line
+            else:
                 break
-            yield line
 
 
 #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 if __name__ == '__main__':
     import sys
     s = SerialBase()
-    sys.stdout.write('port name:  {}\n'.format(s.name))
-    sys.stdout.write('baud rates: {}\n'.format(s.BAUDRATES))
-    sys.stdout.write('byte sizes: {}\n'.format(s.BYTESIZES))
-    sys.stdout.write('parities:   {}\n'.format(s.PARITIES))
-    sys.stdout.write('stop bits:  {}\n'.format(s.STOPBITS))
-    sys.stdout.write('{}\n'.format(s))
+    sys.stdout.write(f'port name:  {s.name}\n')
+    sys.stdout.write(f'baud rates: {s.BAUDRATES}\n')
+    sys.stdout.write(f'byte sizes: {s.BYTESIZES}\n')
+    sys.stdout.write(f'parities:   {s.PARITIES}\n')
+    sys.stdout.write(f'stop bits:  {s.STOPBITS}\n')
+    sys.stdout.write(f'{s}\n')

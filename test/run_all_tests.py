@@ -10,6 +10,7 @@ all test cases from these files. Finally it runs all tests and prints a
 summary.
 """
 
+
 import unittest
 import sys
 import os
@@ -18,12 +19,11 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import serial  # noqa
-print("Patching sys.path to test local version. Testing Version: {}".format(serial.VERSION))
+print(
+    f"Patching sys.path to test local version. Testing Version: {serial.VERSION}"
+)
 
-PORT = 'loop://'
-if len(sys.argv) > 1:
-    PORT = sys.argv[1]
-
+PORT = sys.argv[1] if len(sys.argv) > 1 else 'loop://'
 # find files and the tests in them
 mainsuite = unittest.TestSuite()
 for modulename in [
@@ -34,7 +34,7 @@ for modulename in [
     try:
         module = __import__(modulename)
     except ImportError:
-        print("skipping {}".format(modulename))
+        print(f"skipping {modulename}")
     else:
         module.PORT = PORT
         testsuite = unittest.findTestCases(module)

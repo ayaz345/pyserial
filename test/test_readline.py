@@ -76,9 +76,7 @@ class Test_Readline(unittest.TestCase):
     def test_for_in(self):
         """Test for line in s"""
         self.s.write(serial.to_bytes([0x31, 0x0a, 0x32, 0x0a, 0x33, 0x0a]))
-        lines = []
-        for line in self.s:
-            lines.append(line)
+        lines = list(self.s)
         self.assertEqual(
                 lines,
                 [serial.to_bytes([0x31, 0x0a]), serial.to_bytes([0x32, 0x0a]), serial.to_bytes([0x33, 0x0a])]

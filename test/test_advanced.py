@@ -141,7 +141,7 @@ class Test_ChangeAttributes(unittest.TestCase):
         self.assertRaises(serial.SerialException, self.s.open)
 
     def test_PortOpenClose(self):
-        for i in range(3):
+        for _ in range(3):
             # open the port and check flag
             self.assertTrue(not self.s.isOpen())
             self.s.open()

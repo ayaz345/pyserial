@@ -65,15 +65,16 @@ class DummySerial(SerialBase):
                         option, value = option.split('=', 1)
                     else:
                         value = None
-                    if option == 'logging':
-                        logging.basicConfig()   # XXX is that good to call it here?
-                        self.logger = logging.getLogger('pySerial.test')
-                        self.logger.setLevel(LOGGER_LEVELS[value])
-                        self.logger.debug('enabled logging')
-                    else:
+                    if option != 'logging':
                         raise ValueError('unknown option: {!r}'.format(option))
+                    logging.basicConfig()   # XXX is that good to call it here?
+                    self.logger = logging.getLogger('pySerial.test')
+                    self.logger.setLevel(LOGGER_LEVELS[value])
+                    self.logger.debug('enabled logging')
         except ValueError as e:
-            raise SerialException('expected a string in the form "[test://][option[/option...]]": {}'.format(e))
+            raise SerialException(
+                f'expected a string in the form "[test://][option[/option...]]": {e}'
+            )
         return (host, port)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -192,11 +193,11 @@ else:
 if __name__ == '__main__':
     import sys
     s = Serial('test://logging=debug')
-    sys.stdout.write('{}\n'.format(s))
+    sys.stdout.write(f'{s}\n')
 
     sys.stdout.write("write...\n")
     s.write("hello\n")
     s.flush()
-    sys.stdout.write("read: {}\n".format(s.read(5)))
+    sys.stdout.write(f"read: {s.read(5)}\n")
 
     s.close()

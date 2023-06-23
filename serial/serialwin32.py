@@ -228,19 +228,20 @@ class Serial(SerialBase):
 
     def _close(self):
         """internal close port helper"""
-        if self._port_handle is not None:
-            # Restore original timeout values:
-            win32.SetCommTimeouts(self._port_handle, self._orgTimeouts)
-            if self._overlapped_read is not None:
-                self.cancel_read()
-                win32.CloseHandle(self._overlapped_read.hEvent)
-                self._overlapped_read = None
-            if self._overlapped_write is not None:
-                self.cancel_write()
-                win32.CloseHandle(self._overlapped_write.hEvent)
-                self._overlapped_write = None
-            win32.CloseHandle(self._port_handle)
-            self._port_handle = None
+        if self._port_handle is None:
+            return
+        # Restore original timeout values:
+        win32.SetCommTimeouts(self._port_handle, self._orgTimeouts)
+        if self._overlapped_read is not None:
+            self.cancel_read()
+            win32.CloseHandle(self._overlapped_read.hEvent)
+            self._overlapped_read = None
+        if self._overlapped_write is not None:
+            self.cancel_write()
+            win32.CloseHandle(self._overlapped_write.hEvent)
+            self._overlapped_write = None
+        win32.CloseHandle(self._port_handle)
+        self._port_handle = None
 
     def close(self):
         """Close port"""
@@ -304,38 +305,33 @@ class Serial(SerialBase):
         """Output the given byte string over the serial port."""
         if not self.is_open:
             raise PortNotOpenError()
-        #~ if not isinstance(data, (bytes, bytearray)):
-            #~ raise TypeError('expected %s or bytearray, got %s' % (bytes, type(data)))
-        # convert data (needed in case of memoryview instance: Py 3.1 io lib), ctypes doesn't like memoryview
-        data = to_bytes(data)
-        if data:
-            #~ win32event.ResetEvent(self._overlapped_write.hEvent)
-            n = win32.DWORD()
-            success = win32.WriteFile(self._port_handle, data, len(data), ctypes.byref(n), self._overlapped_write)
-            if self._write_timeout != 0:  # if blocking (None) or w/ write timeout (>0)
-                if not success and win32.GetLastError() not in (win32.ERROR_SUCCESS, win32.ERROR_IO_PENDING):
-                    raise SerialException("WriteFile failed ({!r})".format(ctypes.WinError()))
-
-                # Wait for the write to complete.
-                #~ win32.WaitForSingleObject(self._overlapped_write.hEvent, win32.INFINITE)
-                win32.GetOverlappedResult(self._port_handle, self._overlapped_write, ctypes.byref(n), True)
-                if win32.GetLastError() == win32.ERROR_OPERATION_ABORTED:
-                    return n.value  # canceled IO is no error
-                if n.value != len(data):
-                    raise SerialTimeoutException('Write timeout')
-                return n.value
-            else:
-                errorcode = win32.ERROR_SUCCESS if success else win32.GetLastError()
-                if errorcode in (win32.ERROR_INVALID_USER_BUFFER, win32.ERROR_NOT_ENOUGH_MEMORY,
-                                 win32.ERROR_OPERATION_ABORTED):
-                    return 0
-                elif errorcode in (win32.ERROR_SUCCESS, win32.ERROR_IO_PENDING):
-                    # no info on true length provided by OS function in async mode
-                    return len(data)
-                else:
-                    raise SerialException("WriteFile failed ({!r})".format(ctypes.WinError()))
-        else:
+        if not (data := to_bytes(data)):
             return 0
+        #~ win32event.ResetEvent(self._overlapped_write.hEvent)
+        n = win32.DWORD()
+        success = win32.WriteFile(self._port_handle, data, len(data), ctypes.byref(n), self._overlapped_write)
+        if self._write_timeout != 0:  # if blocking (None) or w/ write timeout (>0)
+            if not success and win32.GetLastError() not in (win32.ERROR_SUCCESS, win32.ERROR_IO_PENDING):
+                raise SerialException("WriteFile failed ({!r})".format(ctypes.WinError()))
+
+            # Wait for the write to complete.
+            #~ win32.WaitForSingleObject(self._overlapped_write.hEvent, win32.INFINITE)
+            win32.GetOverlappedResult(self._port_handle, self._overlapped_write, ctypes.byref(n), True)
+            if win32.GetLastError() == win32.ERROR_OPERATION_ABORTED:
+                return n.value  # canceled IO is no error
+            if n.value != len(data):
+                raise SerialTimeoutException('Write timeout')
+            return n.value
+        else:
+            errorcode = win32.ERROR_SUCCESS if success else win32.GetLastError()
+            if errorcode in (win32.ERROR_INVALID_USER_BUFFER, win32.ERROR_NOT_ENOUGH_MEMORY,
+                             win32.ERROR_OPERATION_ABORTED):
+                return 0
+            elif errorcode in (win32.ERROR_SUCCESS, win32.ERROR_IO_PENDING):
+                # no info on true length provided by OS function in async mode
+                return len(data)
+            else:
+                raise SerialException("WriteFile failed ({!r})".format(ctypes.WinError()))
 
     def flush(self):
         """\
@@ -471,7 +467,8 @@ class Serial(SerialBase):
     @SerialBase.exclusive.setter
     def exclusive(self, exclusive):
         """Change the exclusive access setting."""
-        if exclusive is not None and not exclusive:
-            raise ValueError('win32 only supports exclusive access (not: {})'.format(exclusive))
-        else:
+        if exclusive is None or exclusive:
             serial.SerialBase.exclusive.__set__(self, exclusive)
+
+        else:
+            raise ValueError(f'win32 only supports exclusive access (not: {exclusive})')

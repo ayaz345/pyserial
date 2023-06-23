@@ -35,7 +35,7 @@ class Test_exclusive(unittest.TestCase):
         with serial.Serial(PORT, exclusive=False):
             pass  # OK
 
-    @unittest.skipUnless(os.name in ('posix', 'nt'), "exclusive=True setting not supported on platform")
+    @unittest.skipUnless(os.name in {'posix', 'nt'}, "exclusive=True setting not supported on platform")
     def test_exclusive_true(self):
         """test for exclusive=True"""
         with serial.Serial(PORT, exclusive=True):

@@ -151,7 +151,7 @@ it waits for the next connect.
     try:
         ser.open()
     except serial.SerialException as e:
-        sys.stderr.write('Could not open serial port {}: {}\n'.format(ser.name, e))
+        sys.stderr.write(f'Could not open serial port {ser.name}: {e}\n')
         sys.exit(1)
 
     ser_to_net = SerialToNet()
@@ -168,21 +168,20 @@ it waits for the next connect.
         while True:
             if args.client:
                 host, port = args.client.split(':')
-                sys.stderr.write("Opening connection to {}:{}...\n".format(host, port))
+                sys.stderr.write(f"Opening connection to {host}:{port}...\n")
                 client_socket = socket.socket()
                 try:
                     client_socket.connect((host, int(port)))
                 except socket.error as msg:
-                    sys.stderr.write('WARNING: {}\n'.format(msg))
+                    sys.stderr.write(f'WARNING: {msg}\n')
                     time.sleep(5)  # intentional delay on reconnection as client
                     continue
                 sys.stderr.write('Connected\n')
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                #~ client_socket.settimeout(5)
+                            #~ client_socket.settimeout(5)
             else:
-                sys.stderr.write('Waiting for connection on {}...\n'.format(args.localport))
+                sys.stderr.write(f'Waiting for connection on {args.localport}...\n')
                 client_socket, addr = srv.accept()
-                sys.stderr.write('Connected by {}\n'.format(addr))
+                sys.stderr.write(f'Connected by {addr}\n')
                 # More quickly detect bad clients who quit without closing the
                 # connection: After 1 second of idle, start sending TCP keep-alive
                 # packets every 1 second. If 3 consecutive keep-alive packets
@@ -194,20 +193,20 @@ it waits for the next connect.
                     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 except AttributeError:
                     pass # XXX not available on windows
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
                 ser_to_net.socket = client_socket
                 # enter network <-> serial loop
                 while True:
                     try:
-                        data = client_socket.recv(1024)
-                        if not data:
+                        if data := client_socket.recv(1024):
+                            ser.write(data)                 # get a bunch of bytes and send them
+                        else:
                             break
-                        ser.write(data)                 # get a bunch of bytes and send them
                     except socket.error as msg:
                         if args.develop:
                             raise
-                        sys.stderr.write('ERROR: {}\n'.format(msg))
+                        sys.stderr.write(f'ERROR: {msg}\n')
                         # probably got disconnected
                         break
             except KeyboardInterrupt:
@@ -216,7 +215,7 @@ it waits for the next connect.
             except socket.error as msg:
                 if args.develop:
                     raise
-                sys.stderr.write('ERROR: {}\n'.format(msg))
+                sys.stderr.write(f'ERROR: {msg}\n')
             finally:
                 ser_to_net.socket = None
                 sys.stderr.write('Disconnected\n')

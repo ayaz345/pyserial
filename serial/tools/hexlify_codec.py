@@ -90,10 +90,10 @@ class IncrementalEncoder(codecs.IncrementalEncoder):
             elif c == ' ':      # allow spaces to separate values
                 if state and self.errors == 'strict':
                     raise UnicodeError('odd number of hex digits')
-                state = 0
-            else:
-                if self.errors == 'strict':
-                    raise UnicodeError('non-hex digit found: {!r}'.format(c))
+                else:
+                    state = 0
+            elif self.errors == 'strict':
+                raise UnicodeError('non-hex digit found: {!r}'.format(c))
         self.state = state
         return serial.to_bytes(encoded)
 

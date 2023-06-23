@@ -16,6 +16,7 @@ Additionally a grep function is supplied that can be used to search for ports
 based on their descriptions or hardware ID.
 """
 
+
 from __future__ import absolute_import
 
 import sys
@@ -29,9 +30,10 @@ if os.name == 'nt':  # sys.platform == 'win32':
     from serial.tools.list_ports_windows import comports
 elif os.name == 'posix':
     from serial.tools.list_ports_posix import comports
-#~ elif os.name == 'java':
 else:
-    raise ImportError("Sorry: no implementation for your platform ('{}') available".format(os.name))
+    raise ImportError(
+        f"Sorry: no implementation for your platform ('{os.name}') available"
+    )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -95,12 +97,12 @@ def main():
         if args.n is None or args.n == n:
             sys.stdout.write("{:20}\n".format(port))
             if args.verbose:
-                sys.stdout.write("    desc: {}\n".format(desc))
-                sys.stdout.write("    hwid: {}\n".format(hwid))
+                sys.stdout.write(f"    desc: {desc}\n")
+                sys.stdout.write(f"    hwid: {hwid}\n")
         hits += 1
     if not args.quiet:
         if hits:
-            sys.stderr.write("{} ports found\n".format(hits))
+            sys.stderr.write(f"{hits} ports found\n")
         else:
             sys.stderr.write("no ports found\n")
 

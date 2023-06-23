@@ -66,7 +66,11 @@ class Test4_Nonblocking(unittest.TestCase):
             self.s.write(block)
             # there might be a small delay until the character is ready (especially on win32)
             time.sleep(0.05)
-            self.assertEqual(self.s.in_waiting, length, "expected exactly {} character for inWainting()".format(length))
+            self.assertEqual(
+                self.s.in_waiting,
+                length,
+                f"expected exactly {length} character for inWainting()",
+            )
             self.assertEqual(self.s.read(length), block)  #, "expected a %r which was written before" % block)
         self.assertEqual(self.s.read(1), b'', "expected empty buffer after all sent chars are read")
 
@@ -220,7 +224,10 @@ class Test_MoreTimeouts(unittest.TestCase):
         t1 = time.time()
         self.assertRaises(serial.SerialTimeoutException, self.s.write, b"timeout please" * 200)
         t2 = time.time()
-        self.assertTrue(0.9 <= (t2 - t1) < 2.1, "Timeout not in the given interval ({})".format(t2 - t1))
+        self.assertTrue(
+            0.9 <= (t2 - t1) < 2.1,
+            f"Timeout not in the given interval ({t2 - t1})",
+        )
 
 
 if __name__ == '__main__':

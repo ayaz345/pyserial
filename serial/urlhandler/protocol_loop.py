@@ -109,13 +109,12 @@ class Serial(SerialBase):
         try:
             # process options now, directly altering self
             for option, values in urlparse.parse_qs(parts.query, True).items():
-                if option == 'logging':
-                    logging.basicConfig()   # XXX is that good to call it here?
-                    self.logger = logging.getLogger('pySerial.loop')
-                    self.logger.setLevel(LOGGER_LEVELS[values[0]])
-                    self.logger.debug('enabled logging')
-                else:
+                if option != 'logging':
                     raise ValueError('unknown option: {!r}'.format(option))
+                logging.basicConfig()   # XXX is that good to call it here?
+                self.logger = logging.getLogger('pySerial.loop')
+                self.logger.setLevel(LOGGER_LEVELS[values[0]])
+                self.logger.debug('enabled logging')
         except ValueError as e:
             raise SerialException(
                 'expected a string in the form '
@@ -298,7 +297,7 @@ class Serial(SerialBase):
 if __name__ == '__main__':
     import sys
     s = Serial('loop://')
-    sys.stdout.write('{}\n'.format(s))
+    sys.stdout.write(f'{s}\n')
 
     sys.stdout.write("write...\n")
     s.write("hello\n")
